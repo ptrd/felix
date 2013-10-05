@@ -54,6 +54,7 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
 	private static final ServiceRegistration NULL_REGISTRATION;
     private static final ComponentStateListener[] SERVICE_STATE_LISTENER_TYPE = new ComponentStateListener[] {};
     private static long HIGHEST_ID = 0;
+    private static boolean pedantic = true;
 
     private final Object SYNC = new Object();
     private final BundleContext m_context;
@@ -635,7 +636,7 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
         while (i.hasNext()) {
             Dependency dependency = (Dependency) i.next();
             if (dependency.isAutoConfig() && dependency.isInstanceBound()) {
-                configureImplementation(dependency.getAutoConfigType(), dependency.getAutoConfigInstance(), dependency.getAutoConfigName());
+                configureImplementation(dependency.getAutoConfigType(), dependency.getAutoConfigInstance(), dependency.getAutoConfigName(), true);
             }
         }
     }
@@ -799,16 +800,16 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
 	        }
 	        // configure the bundle context
 	        if (((Boolean) m_autoConfig.get(BundleContext.class)).booleanValue()) {
-	            configureImplementation(BundleContext.class, m_context, (String) m_autoConfigInstance.get(BundleContext.class));
+	            configureImplementation(BundleContext.class, m_context, (String) m_autoConfigInstance.get(BundleContext.class), false);
 	        }
             if (((Boolean) m_autoConfig.get(ServiceRegistration.class)).booleanValue()) {
-                configureImplementation(ServiceRegistration.class, NULL_REGISTRATION, (String) m_autoConfigInstance.get(ServiceRegistration.class));
+                configureImplementation(ServiceRegistration.class, NULL_REGISTRATION, (String) m_autoConfigInstance.get(ServiceRegistration.class), false);
             }
             if (((Boolean) m_autoConfig.get(DependencyManager.class)).booleanValue()) {
-                configureImplementation(DependencyManager.class, m_manager, (String) m_autoConfigInstance.get(DependencyManager.class));
+                configureImplementation(DependencyManager.class, m_manager, (String) m_autoConfigInstance.get(DependencyManager.class), false);
             }
             if (((Boolean) m_autoConfig.get(Component.class)).booleanValue()) {
-                configureImplementation(Component.class, this, (String) m_autoConfigInstance.get(Component.class));
+                configureImplementation(Component.class, this, (String) m_autoConfigInstance.get(Component.class), false);
             }
     	}
     }
@@ -849,7 +850,7 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
             ServiceRegistrationImpl wrapper = new ServiceRegistrationImpl();
             m_registration = wrapper;
             if (((Boolean) m_autoConfig.get(ServiceRegistration.class)).booleanValue()) {
-                configureImplementation(ServiceRegistration.class, m_registration, (String) m_autoConfigInstance.get(ServiceRegistration.class));
+                configureImplementation(ServiceRegistration.class, m_registration, (String) m_autoConfigInstance.get(ServiceRegistration.class), false);
             }
             
             // service name can either be a string or an array of strings
@@ -918,7 +919,7 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
 
     private void updateInstance(Dependency dependency) {
         if (dependency.isAutoConfig()) {
-            configureImplementation(dependency.getAutoConfigType(), dependency.getAutoConfigInstance(), dependency.getAutoConfigName());
+            configureImplementation(dependency.getAutoConfigType(), dependency.getAutoConfigInstance(), dependency.getAutoConfigName(), true);
         }
         if (dependency.isPropagated() && m_registration != null) {
             m_registration.setProperties(calculateServiceProperties());
@@ -934,7 +935,7 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
      * @param instance the instance to fill in
      * @param instanceName the name of the instance to fill in, or <code>null</code> if not used
      */
-    private void configureImplementation(Class clazz, Object instance, String instanceName) {
+    private void configureImplementation(Class clazz, Object instance, String instanceName, boolean serviceInjection) {
     	Object[] instances = getCompositionInstances();
     	if (instances != null) {
 	    	for (int i = 0; i < instances.length; i++) {
@@ -944,6 +945,7 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
 		            serviceInstance = Proxy.getInvocationHandler(serviceInstance);
 		            serviceClazz = serviceInstance.getClass();
 		        }
+                boolean injected = false;
 		        while (serviceClazz != null) {
 		            Field[] fields = serviceClazz.getDeclaredFields();
 		            for (int j = 0; j < fields.length; j++) {
@@ -957,6 +959,7 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
 		                        synchronized (SYNC) {
 		                            field.set(serviceInstance, instance);
 		                        }
+                                injected = true;
 		                    }
 		                    catch (Exception e) {
 		                        m_logger.log(Logger.LOG_ERROR, "Could not set field " + field, e);
@@ -966,6 +969,12 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
 		            }
 		            serviceClazz = serviceClazz.getSuperclass();
 		        }
+                if (pedantic && serviceInjection && !injected) {
+                    if (instanceName != null)
+                        m_logger.log(Logger.LOG_ERROR, "Could not inject " + clazz.getName() + " because there is no field '" + instanceName + "' in " + serviceInstance.getClass().getName());
+                    else
+                        m_logger.log(Logger.LOG_ERROR, "Could not inject " + clazz.getName() + " because there is no field of that type in " + serviceInstance.getClass().getName());
+                }
 	    	}
     	}
     }
@@ -996,7 +1005,7 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
     }
 
     private void configureImplementation(Class clazz, Object instance) {
-        configureImplementation(clazz, instance, null);
+        configureImplementation(clazz, instance, null, false);
     }
 
     private void configureServices(State state) {
@@ -1004,7 +1013,7 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
         while (i.hasNext()) {
             Dependency dependency = (Dependency) i.next();
             if (dependency.isAutoConfig()) {
-                configureImplementation(dependency.getAutoConfigType(), dependency.getAutoConfigInstance(), dependency.getAutoConfigName());
+                configureImplementation(dependency.getAutoConfigType(), dependency.getAutoConfigInstance(), dependency.getAutoConfigName(), true);
             }
             if (dependency.isRequired()) {
                 dependency.invokeAdded(this);
