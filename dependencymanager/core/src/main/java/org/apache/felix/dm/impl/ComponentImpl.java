@@ -21,6 +21,7 @@ package org.apache.felix.dm.impl;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Dictionary;
@@ -960,6 +961,8 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
 		                            field.set(serviceInstance, instance);
 		                        }
                                 injected = true;
+                                if (pedantic)
+                                    checkFieldDeclaration(field);
 		                    }
 		                    catch (Exception e) {
 		                        m_logger.log(Logger.LOG_ERROR, "Could not set field " + field, e);
@@ -978,7 +981,21 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
 	    	}
     	}
     }
-    
+
+    private void checkFieldDeclaration(Field field) {
+        int modifiers = field.getModifiers();
+        String fieldDescription = field.getName() + " in " + field.getDeclaringClass().getName();
+        if (Modifier.isStatic(modifiers)) {
+            m_logger.log(Logger.LOG_ERROR, "Static injection field: " + fieldDescription);
+        }
+        if (!Modifier.isVolatile(modifiers)) {
+            m_logger.log(Logger.LOG_ERROR, "Non-volatile injection field: " + fieldDescription);
+        }
+        if (!Modifier.isPrivate(modifiers)) {
+            m_logger.log(Logger.LOG_WARNING, "Non-private injection field: " + fieldDescription);
+        }
+    }
+
     public Object[] getCompositionInstances() {
         Object[] instances = null;
         if (m_compositionManagerGetMethod != null) {

@@ -19,13 +19,24 @@ Use as a temporary replacement for the original dependencymanager during develop
 
 As with the messages logged by the original, all errors and warnings are logged to the LogService (if present) or the stdout if no LogService is present. If you don't have a LogService deployed, the [OSGi Screenlogger](https://bitbucket.org/pjtr/osgi-screen-logger) might be a convenient logging tool during development.
 
+## Log levels
+
+All detected issues are logged at error or warning level:
+
+
+* `ERROR`: any misconfiguration that will lead to errors in your application, or "risky business" that _might_ lead to errors in your application (it might as well not lead to errors, but the whole point of this version is to avoid risks, and therefore it is logged as error); example: misspelled callback name, injection fields not being declared volatile
+* `WARNING`: any construct that should be avoided, but that might have valid use in some applications, e.g. callback methods not being declared as private.
+
 
 ## List of errors
 
 The following errors are detected by this version:
 
 * failing injection of (auto-config) service, due to missing field of matching type
-* failing injeciton of (auto-config) service in named field (`Dependency.setAutoConfg(String)`), due to missing field / misspelled field name
+* failing injection of (auto-config) service in named field (`Dependency.setAutoConfg(String)`), due to missing field / misspelled field name
+* injection field declared as static: obviously, this might lead to confusing behaviour when the implementation class is instantiated more than once
+* injection field not being declared as volatile: because injection is not synchronized, injection fields should always be declared as volatile
+* injection field not being declared as private: having such fields accessible by others is usually a bad idea, because updates to the field cannot be detected; you're better off using callbacks to let you notify of updates (`WARNING`) 
 
 ## Status
 
