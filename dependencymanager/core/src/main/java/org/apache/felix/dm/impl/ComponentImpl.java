@@ -21,6 +21,7 @@ package org.apache.felix.dm.impl;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
@@ -690,7 +691,12 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
                 InvocationUtil.invokeCallbackMethod(instances[i], methodName, signatures, parameters);
             }
             catch (NoSuchMethodException e) {
-                // if the method does not exist, ignore it
+                if (findMethodByNameOnly(instances[i], methodName) == null) {
+                    m_logger.log(Logger.LOG_ERROR, "Mising callback method '" + methodName + "' in " + instances[i].getClass().getName());
+                }
+                else {
+                    m_logger.log(Logger.LOG_ERROR, "Incorrect signature for callback method '" + methodName + "' in " + instances[i].getClass().getName());
+                }
             }
             catch (InvocationTargetException e) {
                 // the method itself threw an exception, log that
@@ -700,6 +706,18 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
                 m_logger.log(Logger.LOG_WARNING, "Could not invoke '" + methodName + "'.", e);
             }
         }
+    }
+
+    private Method findMethodByNameOnly(Object instance, String methodName) {
+        if (instance != null && methodName != null) {
+            Class clazz = instance.getClass();
+            Method[] allMethods = clazz.getMethods();
+            for (int i = 0; i < allMethods.length; i++) {
+                if (allMethods[i].getName().equals(methodName))
+                    return allMethods[i];
+            }
+        }
+        return null;
     }
 
     private void startTrackingOptional(State state) {
@@ -984,7 +1002,7 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
 
     private void checkFieldDeclaration(Field field) {
         int modifiers = field.getModifiers();
-        String fieldDescription = field.getName() + " in " + field.getDeclaringClass().getName();
+        String fieldDescription = "'" + field.getName() + "' in " + field.getDeclaringClass().getName();
         if (Modifier.isStatic(modifiers)) {
             m_logger.log(Logger.LOG_ERROR, "Static injection field: " + fieldDescription);
         }

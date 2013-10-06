@@ -19,6 +19,14 @@ Use as a temporary replacement for the original dependencymanager during develop
 
 As with the messages logged by the original, all errors and warnings are logged to the LogService (if present) or the stdout if no LogService is present. If you don't have a LogService deployed, the [OSGi Screenlogger](https://bitbucket.org/pjtr/osgi-screen-logger) might be a convenient logging tool during development.
 
+## Implicit callbacks
+
+The DependencyManager has a number of implicit callbacks (hooks), that you might or might not use. If you don't use them, you can disable them, but most people don't do that as it causes no harm. However, this version of the DependencyManager will complain if the callbacks are missing and not disabled (that's why it's called pedantic). To get rid of these errors, ensure that you always set the right callback methods on the `Component`, e.g.
+
+    dependencyManager.createComponent().setCallbacks(null, null, null, null);
+    
+to disable them all.
+
 ## Log levels
 
 All detected issues are logged at error or warning level:
@@ -37,6 +45,8 @@ The following errors are detected by this version:
 * injection field declared as static: obviously, this might lead to confusing behaviour when the implementation class is instantiated more than once
 * injection field not being declared as volatile: because injection is not synchronized, injection fields should always be declared as volatile
 * injection field not being declared as private: having such fields accessible by others is usually a bad idea, because updates to the field cannot be detected; you're better off using callbacks to let you notify of updates (`WARNING`) 
+* missing callback methods, either implicit (Component callbacks) as explicit (Dependency callbacks)
+* callbacks methods with incorrect signature (won't be called)
 
 ## Status
 
