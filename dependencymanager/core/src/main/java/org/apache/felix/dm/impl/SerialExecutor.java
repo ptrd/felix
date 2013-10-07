@@ -19,7 +19,6 @@
 package org.apache.felix.dm.impl;
 
 import java.util.LinkedList;
-import java.util.NoSuchElementException;
 
 /**
  * Allows you to enqueue tasks from multiple threads and then execute
@@ -77,12 +76,11 @@ public final class SerialExecutor {
     private void scheduleNext() {
     	Runnable active;
     	synchronized (this) {
-    		try {
-    			m_active = (Runnable) m_workQueue.removeFirst();
-    		}
-    		catch (NoSuchElementException e) {
-    			m_active = null;
-    		}
+			if (!m_workQueue.isEmpty()) {
+				m_active = (Runnable) m_workQueue.removeFirst();
+			} else {
+				m_active = null;
+			}
     		active = m_active;
     	}
     	if (active != null) {
