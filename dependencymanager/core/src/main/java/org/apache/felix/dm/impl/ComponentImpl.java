@@ -692,7 +692,7 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
             }
             catch (NoSuchMethodException e) {
                 if (findMethodByNameOnly(instances[i], methodName) == null) {
-                    m_logger.log(Logger.LOG_ERROR, "Mising callback method '" + methodName + "' in " + instances[i].getClass().getName());
+                    m_logger.log(Logger.LOG_ERROR, "Missing callback method '" + methodName + "' in " + instances[i].getClass().getName());
                 }
                 else {
                     m_logger.log(Logger.LOG_ERROR, "Incorrect signature for callback method '" + methodName + "' in " + instances[i].getClass().getName());
