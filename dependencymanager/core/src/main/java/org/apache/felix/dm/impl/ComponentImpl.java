@@ -458,6 +458,10 @@ public class ComponentImpl implements Component, DependencyService, ComponentDec
 	public synchronized Component setImplementation(Object implementation) {
 	    ensureNotActive();
 	    m_implementation = implementation;
+        if (pedantic && implementation instanceof String) {
+            // Strictly speaking not wrong, but pretty useless and probably a class name that had to be added as class
+            m_logger.log(Logger.LOG_ERROR, "Invalid argument of type String for setImplementation() method; argument should be the implementation itself or its type (i.e. a Class object).");
+        }
 	    return this;
 	}
 

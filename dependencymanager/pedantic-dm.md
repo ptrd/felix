@@ -47,6 +47,7 @@ The following errors are detected by this version:
 * injection field not being declared as private: having such fields accessible by others is usually a bad idea, because updates to the field cannot be detected; you're better off using callbacks to let you notify of updates (`WARNING`) 
 * missing callback methods, either implicit (Component callbacks) as explicit (Dependency callbacks)
 * callbacks methods with incorrect signature (won't be called)
+* passing a `String` value as argument to `Component.setImplementation()`
 
 ## Status
 
