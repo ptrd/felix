@@ -53,4 +53,4 @@ The following errors are detected by this version:
 
 This fork tracks the original. Since it started, there have been no DependencyManager releases yet. 
 The latest commit from the original Felix repository that is present is this repository too, is
-<https://svn.apache.org/repos/asf/felix/trunk@1529197>.
+<https://svn.apache.org/repos/asf/felix/trunk@1533418>.
